@@ -4,22 +4,18 @@
 <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-v1.13+-red.svg?logo=PyTorch&style=for-the-badge" /></a>
 <a href="#"><img src="https://img.shields.io/badge/python-v3.6+-blue.svg?logo=python&style=for-the-badge" /></a>
 
-![input and output for a random image in the test dataset](https://i.imgur.com/GD8FcB7.png)
-
-
 Customized implementation of the [U-Net](https://arxiv.org/abs/1505.04597) in PyTorch for Kaggle's [Carvana Image Masking Challenge](https://www.kaggle.com/c/carvana-image-masking-challenge) from high definition images.
 
-- [Quick start](#quick-start)
-  - [Without Docker](#without-docker)
-  - [With Docker](#with-docker)
-- [Description](#description)
-- [Usage](#usage)
-  - [Docker](#docker)
-  - [Training](#training)
-  - [Prediction](#prediction)
-- [Weights & Biases](#weights--biases)
-- [Pretrained model](#pretrained-model)
-- [Data](#data)
+- [Pytorch-Unet-timeseries](#pytorch-unet-timeseries)
+  - [Quick start](#quick-start)
+    - [Without Docker](#without-docker)
+    - [With Docker](#with-docker)
+  - [Usage](#usage)
+    - [Docker](#docker)
+    - [Training](#training)
+    - [Prediction](#prediction)
+  - [Weights \& Biases](#weights--biases)
+  - [Data](#data)
 
 ## Quick start
 
@@ -65,12 +61,6 @@ sudo docker run --rm --shm-size=8g --ulimit memlock=-1 --gpus all -it milesial/u
 bash scripts/download_data.sh
 python train.py --amp
 ```
-
-## Description
-This model was trained from scratch with 5k images and scored a [Dice coefficient](https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient) of 0.988423 on over 100k test images.
-
-It can be easily used for multiclass segmentation, portrait segmentation, medical segmentation, ...
-
 
 ## Usage
 **Note : Use Python 3.6 or newer**
@@ -157,33 +147,9 @@ The training progress can be visualized in real-time using [Weights & Biases](ht
 When launching a training, a link will be printed in the console. Click on it to go to your dashboard. If you have an existing W&B account, you can link it
  by setting the `WANDB_API_KEY` environment variable. If not, it will create an anonymous run which is automatically deleted after 7 days.
 
-
-## Pretrained model
-A [pretrained model](https://github.com/milesial/Pytorch-UNet/releases/tag/v3.0) is available for the Carvana dataset. It can also be loaded from torch.hub:
-
-```python
-net = torch.hub.load('milesial/Pytorch-UNet', 'unet_carvana', pretrained=True, scale=0.5)
-```
-Available scales are 0.5 and 1.0.
-
 ## Data
-The Carvana data is available on the [Kaggle website](https://www.kaggle.com/c/carvana-image-masking-challenge/data).
 
-You can also download it using the helper script:
-
-```
-bash scripts/download_data.sh
-```
-
-The input images and target masks should be in the `data/imgs` and `data/masks` folders respectively (note that the `imgs` and `masks` folder should not contain any sub-folder or any other files, due to the greedy data-loader). For Carvana, images are RGB and masks are black and white.
+The input data and target masks should be in the `data/attack.csv` and `data/label.csv` files.
 
 You can use your own dataset as long as you make sure it is loaded properly in `utils/data_loading.py`.
 
-
----
-
-Original paper by Olaf Ronneberger, Philipp Fischer, Thomas Brox:
-
-[U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
-
-![network architecture](https://i.imgur.com/jeDVpqF.png)
