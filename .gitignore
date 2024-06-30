@@ -1,0 +1,22 @@
+checkpoints/
+wandb/
+
+**/__pycache__/
+
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.ico
+*.jfif
+*.webp
+*.svg
+
+# Tabular files
+*.csv
+
+#
+*.pth
