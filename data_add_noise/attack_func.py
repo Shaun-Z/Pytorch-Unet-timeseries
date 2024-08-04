@@ -9,15 +9,19 @@ def type1_attack(data, start_point, duration, alpha_range=(0.2, 0.8)):
     data[:, :, start_point:end_point] *= alpha
     return data
 
-def type2_attack(data, start_point, duration, sigma):
+def type2_attack(data, start_point, duration):
     end_point = start_point + duration
+    sigma_range = (0, np.max(data))
+    sigma = np.random.uniform(*sigma_range)
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             data[i, j, start_point:end_point] = np.clip(data[i, j, start_point:end_point], None, sigma)
     return data
 
-def type3_attack(data, start_point, duration, gamma):
+def type3_attack(data, start_point, duration):
     end_point = start_point + duration
+    gamma_range = (0, np.max(data))
+    gamma = np.random.uniform(*gamma_range)
     data[:, :, start_point:end_point] -= gamma
     data = np.maximum(data, 0)  # Ensure no negative values
     return data
@@ -65,8 +69,8 @@ if __name__ == '__main__':
 
     # Apply attacks
     data_type1 = type1_attack(data.copy(), start_point, duration)
-    data_type2 = type2_attack(data.copy(), start_point, duration, sigma=30)
-    data_type3 = type3_attack(data.copy(), start_point, duration, gamma=10)
+    data_type2 = type2_attack(data.copy(), start_point, duration)
+    data_type3 = type3_attack(data.copy(), start_point, duration)
     data_type4 = type4_attack(data.copy(), start_point, duration)
     data_type5 = type5_attack(data.copy(), start_point, duration)
     data_type6 = type6_attack(data.copy(), start_point, duration)

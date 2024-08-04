@@ -19,14 +19,18 @@ from unet import UNet_1D
 from utils.data_loading import SGCCDataset
 from utils.dice_score import dice_loss
 
-dir_data = Path('./data/attack.csv')
-dir_mask = Path('./data/label.csv')
-dir_checkpoint = Path('./checkpoints/')
+# dir_data = Path('./data/attack.csv')
+# dir_mask = Path('./data/label.csv')
+# dir_data = Path('./data_add_noise/zx.csv')
+id = 3
+dir_data = Path(f'./zx{id}_normalized.csv')
+dir_mask = Path(f'./zy{id}.csv')
+dir_checkpoint = Path(f'./checkpoints{id}/')
 
 val_percent: float = 0.1
 batch_size: int = 200
 epochs: int = 40
-learning_rate: float = 1e-5
+learning_rate: float = 1e-4 # 1e-5
 save_checkpoint: bool = True
 amp: bool = False
 weight_decay: float = 1e-8
@@ -37,12 +41,10 @@ def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=2, help='Batch size')
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5,
-                        help='Learning rate', dest='lr')
+    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=1e-5, help='Learning rate', dest='lr')
     parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
     parser.add_argument('--scale', '-s', type=float, default=0.5, help='Downscaling factor of the images')
-    parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
-                        help='Percent of the data that is used as validation (0-100)')
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0, help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
@@ -133,8 +135,12 @@ if __name__ == '__main__':
                 data = data.to(device=device, dtype=torch.float32)
                 true_masks = true_masks.to(device=device, dtype=torch.long)
 
-                masks_pred = model(data)
-
+                masks_pred = model(data) ### fake labels
+                print(masks_pred.size(), true_masks.size())
+                
+                # prob_masks_pred = D(masks_pred)
+                              
+                # loss = criterion(prob_masks_pred, true_masks)### GAN structure
                 loss = criterion(masks_pred, true_masks)
                 loss += dice_loss(
                     F.softmax(masks_pred, dim=1).float(),

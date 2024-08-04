@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul  9 12:37:48 2024
+
+@author: 37092
+"""
+
 import argparse
 import logging
 import os
@@ -8,30 +15,31 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 
+from pathlib import Path
 from utils.data_loading import BasicDataset
-from unet import UNet
+from unet import UNet_1D
 from utils.utils import plot_img_and_mask
 
-def predict_img(net,
-                full_img,
+from utils.data_loading import SGCCDataset
+import pandas as pd
+from torch.utils.data import DataLoader, random_split
+
+def predict_data(net,
+                data,
                 device,
-                scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-    img = torch.from_numpy(BasicDataset.preprocess(None, full_img, scale_factor, is_mask=False))
-    img = img.unsqueeze(0)
-    img = img.to(device=device, dtype=torch.float32)
+    data = data.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
-        output = net(img).cpu()
-        output = F.interpolate(output, (full_img.size[1], full_img.size[0]), mode='bilinear')
+        output = net(data).cpu()
+        # print(output.size())
         if net.n_classes > 1:
             mask = output.argmax(dim=1)
         else:
             mask = torch.sigmoid(output) > out_threshold
-
+        # print(mask.size())
     return mask[0].long().squeeze().numpy()
-
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
@@ -49,16 +57,6 @@ def get_args():
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
     
-    return parser.parse_args()
-
-
-def get_output_filenames(args):
-    def _generate_name(fn):
-        return f'{os.path.splitext(fn)[0]}_OUT.png'
-
-    return args.output or list(map(_generate_name, args.input))
-
-
 def mask_to_image(mask: np.ndarray, mask_values):
     if isinstance(mask_values[0], list):
         out = np.zeros((mask.shape[-2], mask.shape[-1], len(mask_values[0])), dtype=np.uint8)
@@ -73,45 +71,76 @@ def mask_to_image(mask: np.ndarray, mask_values):
     for i, v in enumerate(mask_values):
         out[mask == i] = v
 
-    return Image.fromarray(out)
+    return Image.fromarray(out)    
+    
+id = 3
+
+# dir_data = Path('./data/attack.csv')
+# dir_mask = Path('./data/label.csv')
+# dir_data = Path('./data_add_noise/zx.csv')
+dir_data = Path(f'./zx{id}_normalized.csv')
+# dir_data = Path('./data_add_noise/usable_theft_2016_linear.csv')######693 out of 1989 wrong
+dir_mask = Path(f'./zy{id}.csv')
+dataset = SGCCDataset(dir_data, dir_mask)
+data = dataset.data_tensor
+mask = dataset.mask_tensor
 
 
-if __name__ == '__main__':
-    args = get_args()
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+net = UNet_1D(n_channels=1, n_classes=2, bilinear=False)
 
-    in_files = args.input
-    out_files = get_output_filenames(args)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    net = UNet(n_channels=3, n_classes=args.classes, bilinear=args.bilinear)
+net.to(device=device)
+state_dict = torch.load(f'./checkpoints{id}/checkpoint_epoch40.pth', map_location=device)
+mask_values = state_dict.pop('mask_values', [0, 1])
+net.load_state_dict(state_dict)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logging.info(f'Loading model {args.model}')
-    logging.info(f'Using device {device}')
+result = []
+pred_ts = []
+for i in range(len(dataset)):
+    logging.info(f'Predicting No. {i} ...')
+    item = data[i,:,:].unsqueeze(0)  
+    
+    mask = predict_data(net=net,
+                        data=item,
+                        out_threshold=0.5,
+                        device=device)
 
-    net.to(device=device)
-    state_dict = torch.load(args.model, map_location=device)
-    mask_values = state_dict.pop('mask_values', [0, 1])
-    net.load_state_dict(state_dict)
+    result.append(mask)
 
-    logging.info('Model loaded!')
+result_df = pd.DataFrame(result)
+# result_df.to_csv('result.csv', index=False)
 
-    for i, filename in enumerate(in_files):
-        logging.info(f'Predicting image {filename} ...')
-        img = Image.open(filename)
+zy = pd.read_csv(f'./zy{id}.csv')
 
-        mask = predict_img(net=net,
-                           full_img=img,
-                           scale_factor=args.scale,
-                           out_threshold=args.mask_threshold,
-                           device=device)
 
-        if not args.no_save:
-            out_filename = out_files[i]
-            result = mask_to_image(mask, mask_values)
-            result.save(out_filename)
-            logging.info(f'Mask saved to {out_filename}')
 
-        if args.viz:
-            logging.info(f'Visualizing results for image {filename}, close to continue...')
-            plot_img_and_mask(img, mask)
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Create a figure with two subplots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+fig.suptitle(f'Attack {id}')   
+
+# Plot the first heatmap
+sns.heatmap(result_df, ax=ax1)
+ax1.set_title('Heatmap of prediction')
+
+# Plot the second heatmap
+sns.heatmap(zy, ax=ax2)
+ax2.set_title('Heatmap of target')
+
+# Display the plot
+plt.tight_layout()
+plt.savefig(f'result{id}.png')
+plt.show()
+
+
+
+result_df_sum = result_df.sum(axis=1)
+
+
+
+
+    
