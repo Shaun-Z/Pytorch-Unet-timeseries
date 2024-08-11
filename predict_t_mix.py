@@ -73,14 +73,15 @@ def mask_to_image(mask: np.ndarray, mask_values):
 
     return Image.fromarray(out)    
     
-id = '32000'
+id_model = '3'
+id_data_test = '32000'
 
 # dir_data = Path('./data/attack.csv')
 # dir_mask = Path('./data/label.csv')
 # dir_data = Path('./data_add_noise/zx.csv')
-dir_data = Path(f'./zx{id}_normalized.csv')
+dir_data = Path(f'./zx{id_data_test}_normalized.csv')
 # dir_data = Path('./data_add_noise/usable_theft_2016_linear.csv')######693 out of 1989 wrong
-dir_mask = Path(f'./zy{id}.csv')
+dir_mask = Path(f'./zy{id_data_test}.csv')
 dataset = SGCCDataset(dir_data, dir_mask)
 data = dataset.data_tensor
 mask = dataset.mask_tensor
@@ -91,7 +92,7 @@ net = UNet_1D(n_channels=1, n_classes=2, bilinear=False)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 net.to(device=device)
-state_dict = torch.load(f'./checkpoints{id}/checkpoint_epoch40.pth', map_location=device)
+state_dict = torch.load(f'./checkpoints{id_model}/checkpoint_epoch40.pth', map_location=device)
 mask_values = state_dict.pop('mask_values', [0, 1])
 net.load_state_dict(state_dict)
 
@@ -111,7 +112,7 @@ for i in range(len(dataset)):
 result_df = pd.DataFrame(result)
 # result_df.to_csv('result.csv', index=False)
 
-zy = pd.read_csv(f'./zy{id}.csv')
+zy = pd.read_csv(f'./zy{id_data_test}.csv')
 
 
 
@@ -121,7 +122,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # Create a figure with two subplots
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-fig.suptitle(f'Attack {id}')   
+fig.suptitle(f'Attack {id_model}')   
 
 # Plot the first heatmap
 sns.heatmap(result_df, ax=ax1)
@@ -133,7 +134,7 @@ ax2.set_title('Heatmap of target')
 
 # Display the plot
 plt.tight_layout()
-plt.savefig(f'result{id}.png')
+plt.savefig(f'result{id_model}_mix.png')
 plt.show()
 
 

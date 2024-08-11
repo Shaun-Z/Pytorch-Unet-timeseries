@@ -57,7 +57,7 @@ def plot_attack(original, attacked, attack_type):
     plt.xlabel('Time Interval')
     plt.ylabel('Electricity Consumption')
     plt.savefig(f'{attack_type}_attack.png')
-    plt.close()
+    plt.show()
 
 if __name__ == '__main__':
     # Generate example data (1 batch, 1 channel, 48 data points)

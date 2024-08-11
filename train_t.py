@@ -22,7 +22,7 @@ from utils.dice_score import dice_loss
 # dir_data = Path('./data/attack.csv')
 # dir_mask = Path('./data/label.csv')
 # dir_data = Path('./data_add_noise/zx.csv')
-id = 3
+id = '31700'
 dir_data = Path(f'./zx{id}_normalized.csv')
 dir_mask = Path(f'./zy{id}.csv')
 dir_checkpoint = Path(f'./checkpoints{id}/')
