@@ -35,6 +35,8 @@ def has_continuous_nans(row, threshold=2):
             consecutive_nans = 0
     return False
 
+os.makedirs('./data_prepared', exist_ok=True)
+
 original_data = pd.read_csv("./data/SGCC_data/data.csv")
 
 original_data_theft = original_data[original_data.FLAG == 1]
@@ -190,7 +192,7 @@ def type6_attack(data, start_point, duration, alpha_range=(0.2, 0.8)):
 '''
 
 # 对每个用户施加攻击
-id = 2
+id = 1
 err=[]
 for i in range(len(df1)):
     # 计算开始索引和结束索引

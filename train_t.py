@@ -32,7 +32,7 @@ dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
 dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
 dir_checkpoint = Path(f'./checkpoints_pseudo_{id}/')
 
-val_percent: float = 0.1
+val_percent: float = 0.1    # 0.1, 0.2, 0.3, 0.4, 0.5
 # batch_size: int = 200
 batch_size: int = 200
 epochs: int = 40
