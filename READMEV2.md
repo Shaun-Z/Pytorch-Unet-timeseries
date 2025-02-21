@@ -19,5 +19,5 @@ python train_t.py --data_name SGCC --attack_id 1 --val_percent 0.1
 # Predict
 
 ```shell
-python predict_t.py --data_name SGCC --attack_id 1 --val percent 0.1
+python predict_t.py --data_name SGCC --attack_id 1 --val_percent 0.1
 ```
