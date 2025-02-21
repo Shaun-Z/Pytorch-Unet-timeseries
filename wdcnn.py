@@ -125,13 +125,12 @@ if __name__ == '__main__':
     import pandas as pd
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import f1_score, recall_score
     id = 'SGCC'
     dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
     dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
     dir_checkpoint = Path(f'./checkpoints_pseudo_{id}/')
 
-    val_percent: float = 0.1
-    # batch_size: int = 200
     batch_size: int = 200
     epochs: int = 120
     learning_rate: float = 1e-4 # 1e-5
@@ -140,8 +139,8 @@ if __name__ == '__main__':
     weight_decay: float = 1e-8
     momentum: float = 0.999
     gradient_clipping: float = 1.0
-    weeks = 43
-    days = 7
+    weeks = 43  #43, 29
+    days = 7   #7, 24
 
     data = pd.read_csv(dir_data)
     label = pd.read_csv(dir_mask)
@@ -240,7 +239,6 @@ if __name__ == '__main__':
             correct += (predicted == targets).sum().item()
     
     accuracy = correct / total
-    print(f'Test Accuracy: {accuracy * 100:.2f}%')
     
     # Calculate AUC on test set
     all_targets = []
@@ -253,7 +251,14 @@ if __name__ == '__main__':
             all_outputs.extend(outputs.squeeze().numpy())
 
     auc = roc_auc_score(all_targets, all_outputs)
-    print(f'Test AUC: {auc:.2f}')
+    # Calculate F1 and recall on test set
+    f1 = f1_score(all_targets, (np.array(all_outputs) > 0.5).astype(int))
+    recall = recall_score(all_targets, (np.array(all_outputs) > 0.5).astype(int))
+
+    print(f'Accuracy: {accuracy}')
+    print(f'F1 Score: {f1}')
+    print(f'Recall: {recall}')
+    print(f'AUC: {auc}')
 
     # Save the model checkpoint
     if save_checkpoint:

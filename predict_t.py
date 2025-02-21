@@ -1,29 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jul  9 12:37:48 2024
-
-@author: 37092
-"""
-
+# %%
+import pandas as pd
 import argparse
 import logging
-import os
-
-import numpy as np
-import torch
-import torch.nn.functional as F
-from PIL import Image
-from torchvision import transforms
-
 from pathlib import Path
-from utils.data_loading import BasicDataset
-from unet import UNet_1D, UNet_1D_N
-from utils.utils import plot_img_and_mask
-
 from utils.data_loading import SGCCDataset
-import pandas as pd
-from torch.utils.data import DataLoader, random_split
+import torch
+from unet import UNet_1D, UNet_1D_N, UNet_1D_L, UNet_1D_NN
+from torch.utils.data import random_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
+# %%
 def predict_data(net,
                 data,
                 device,
@@ -32,6 +20,7 @@ def predict_data(net,
     data = data.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
+        print(data.shape)
         output = net(data).cpu()
         # print(output.size())
         if net.n_classes > 1:
@@ -41,65 +30,92 @@ def predict_data(net,
         # print(mask.size())
     return mask[0].long().squeeze().numpy()
 
+# %%
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
-                        help='Specify the file in which the model is stored')
-    parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
-    parser.add_argument('--output', '-o', metavar='OUTPUT', nargs='+', help='Filenames of output images')
-    parser.add_argument('--viz', '-v', action='store_true',
-                        help='Visualize the images as they are processed')
-    parser.add_argument('--no-save', '-n', action='store_true', help='Do not save the output masks')
-    parser.add_argument('--mask-threshold', '-t', type=float, default=0.5,
-                        help='Minimum probability value to consider a mask pixel white')
-    parser.add_argument('--scale', '-s', type=float, default=0.5,
-                        help='Scale factor for the input images')
-    parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
-    parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
-    
-def mask_to_image(mask: np.ndarray, mask_values):
-    if isinstance(mask_values[0], list):
-        out = np.zeros((mask.shape[-2], mask.shape[-1], len(mask_values[0])), dtype=np.uint8)
-    elif mask_values == [0, 1]:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=bool)
-    else:
-        out = np.zeros((mask.shape[-2], mask.shape[-1]), dtype=np.uint8)
+    parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
+    parser.add_argument('--attack_id', type=int, default=1, help='Attack ID')
+    parser.add_argument('--val_percent', type=float, default=0.1, help='Validation percentage')
+    parser.add_argument('--model', '-m', default='best_checkpoint.pth', metavar='FILE', help="Specify the file in which the model is stored")
+    return parser.parse_known_args()
 
-    if mask.ndim == 3:
-        mask = np.argmax(mask, axis=0)
+# %%
+args, _ = get_args()
+data_name = args.data_name
+attack_id = args.attack_id
+val_percent = args.val_percent
+model = args.model
+dir_checkpoint = Path(f'./checkpoints_pseudo_{data_name}/')
 
-    for i, v in enumerate(mask_values):
-        out[mask == i] = v
+# %%
+zx3_normalized = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/zx{attack_id}_normalized.csv') 
+normal3_normalized = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/Normal3_normalized.csv')
+# Rename the columns of df2 to match df1
+normal3_normalized.columns = zx3_normalized.columns
 
-    return Image.fromarray(out)    
-    
-id = '32000'
+zy3 = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/zy{attack_id}.csv') 
+normal3_normalized_label = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/Normal3_normalized_label.csv')
+normal3_normalized_label.columns = zy3.columns
 
-# dir_data = Path('./data/attack.csv')
-# dir_mask = Path('./data/label.csv')
-# dir_data = Path('./data_add_noise/zx.csv')
-dir_data = Path(f'./zx{id}_normalized.csv')
-# dir_data = Path('./data_add_noise/usable_theft_2016_linear.csv')######693 out of 1989 wrong
-dir_mask = Path(f'./zy{id}.csv')
+combined_dfx = pd.concat([zx3_normalized, normal3_normalized], ignore_index=True)#
+combined_dfy = pd.concat([zy3, normal3_normalized_label], ignore_index=True)#
+
+
+combined_dfx.to_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfx.csv', index=False)
+combined_dfy.to_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy.csv', index=False)
+
+normal3_normalized_pseudolabel2 = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/Normal3_normalized_pseudolabel.csv')
+normal3_normalized_pseudolabel2.columns = zy3.columns
+combined_dfy_pseudo2 = pd.concat([zy3, normal3_normalized_pseudolabel2], ignore_index=True)#
+combined_dfy_pseudo2.to_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv', index=False)
+
+# %%
+combined_dfy_pseudo2.shape
+
+# %%
+##### testing 用的predict_t.py
+# data_name = ''
+##### 改变的地方是：
+dir_data = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfx.csv')
+# dir_mask = Path('./combined_dfy.csv')
+dir_mask = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv')
 dataset = SGCCDataset(dir_data, dir_mask)
+
+n_val = int(len(dataset) * val_percent)
+n_train = len(dataset) - n_val
+train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+
 data = dataset.data_tensor
 mask = dataset.mask_tensor
 
+data_train = torch.tensor(np.array([train_set[i]['data'] for i in range(len(train_set))]).squeeze())
+mask_train = torch.tensor(np.array([train_set[i]['mask'] for i in range(len(train_set))]).squeeze())
 
-net = UNet_1D_N(n_channels=1, n_classes=2, bilinear=False)
+data_val = torch.tensor(np.array([val_set[i]['data'] for i in range(len(val_set))]).squeeze())
+mask_val = torch.tensor(np.array([val_set[i]['mask'] for i in range(len(val_set))]).squeeze())
+
+net = UNet_1D(n_channels=1, n_classes=2, bilinear=False)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 net.to(device=device)
-state_dict = torch.load(f'./checkpoints{id}/checkpoint_epoch40.pth', map_location=device)
+state_dict = torch.load(f'./checkpoints_pseudo_{data_name}/{model}', map_location=device)
+# state_dict = torch.load(f'./checkpoints_pseudo_{data_name}/checkpoint_epoch20.pth', map_location=device)
 mask_values = state_dict.pop('mask_values', [0, 1])
 net.load_state_dict(state_dict)
 
+# %%
+data_val.shape, mask_val.shape
+
+# %%
+val_set[0].keys()
+
+# %%
 result = []
 pred_ts = []
-for i in range(len(dataset)):
-    logging.info(f'Predicting No. {i} ...')
-    item = data[i,:,:].unsqueeze(0)  
+for i in range(len(data_val)):
+    item = data_val[i, :].unsqueeze(0).unsqueeze(0)
+    print(item.shape)
     
     mask = predict_data(net=net,
                         data=item,
@@ -108,16 +124,17 @@ for i in range(len(dataset)):
 
     result.append(mask)
 
+# %%
 result_df = pd.DataFrame(result)
 # result_df.to_csv('result.csv', index=False)
+zy = pd.DataFrame(np.array(mask_val).astype(int))
+# zy = pd.read_csv('./combined_dfy.csv')
+# zy = pd.read_csv(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv')
+# zy = pd.read_csv('.\Attack3_normalized_label.csv')
 
-zy = pd.read_csv(f'./zy{id}.csv')
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 # Create a figure with two subplots
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-fig.suptitle(f'Attack {id}')   
+fig.suptitle(f'Attack 3')   
 
 # Plot the first heatmap
 sns.heatmap(result_df, ax=ax1)
@@ -129,14 +146,58 @@ ax2.set_title('Heatmap of target')
 
 # Display the plot
 plt.tight_layout()
-plt.savefig(f'result{id}.png')
+# plt.savefig(f'result{data_name}.png')
 plt.show()
 
+# %%
+result_df.shape, zy.shape
+
+# %%
+# 检测窃电，如果连续有7个1，就标记为窃电
+def mark_continuous_ones(df, threshold=7):
+    def has_continuous_ones(row):
+        count = 0
+        for value in row:
+            if value == 1:
+                count += 1
+                if count >= threshold:
+                    return True
+            else:
+                count = 0
+        return False
+
+    return df.apply(has_continuous_ones, axis=1)
+
+# %%
+# Example usage:
+result_marked = mark_continuous_ones(result_df)
+zy_marked = mark_continuous_ones(zy, threshold=7)
+
+# %%
+plt.figure(figsize=(20, 5))
+plt.plot(result_marked, label='Prediction')
+plt.scatter(np.arange(len(zy_marked)), zy_marked, label='Target', color='red')
+plt.title('Continuous ones')
+plt.legend()
+plt.show()
+
+# %%
+from sklearn.metrics import accuracy_score, f1_score, recall_score, roc_auc_score
+
+# Calculate accuracy
+accuracy = accuracy_score(zy_marked, result_marked)
+
+# Calculate F1 score
+f1 = f1_score(zy_marked, result_marked)
+
+# Calculate recall
+recall = recall_score(zy_marked, result_marked)
+
+auc = roc_auc_score(zy_marked, result_marked)
+
+print(f'Accuracy: {accuracy}')
+print(f'F1 Score: {f1}')
+print(f'Recall: {recall}')
+print(f'AUC: {auc}')
 
 
-result_df_sum = result_df.sum(axis=1)
-
-
-
-
-    

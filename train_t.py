@@ -27,12 +27,6 @@ from utils.dice_score import dice_loss
 # dir_mask = Path(f'./zy{id}.csv')
 # dir_checkpoint = Path(f'./checkpoints{id}/')
 
-id = 'SGCC'
-dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
-dir_checkpoint = Path(f'./checkpoints_pseudo_{id}/')
-
-val_percent: float = 0.1    # 0.1, 0.2, 0.3, 0.4, 0.5
 # batch_size: int = 200
 batch_size: int = 200
 epochs: int = 40
@@ -54,11 +48,21 @@ def get_args():
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
+    parser.add_argument('--val_percent', type=float, default=0.1, help='Validation percent')
+    parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
+    parser.add_argument('--attack_id', '-a', type=int, default=1, help='Attack ID')
 
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = get_args()
+
+    data_name = args.data_name
+    attack_id = args.attack_id
+    val_percent = args.val_percent
+    dir_data = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfx.csv')
+    dir_mask = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv')
+    dir_checkpoint = Path(f'./checkpoints_pseudo_{data_name}/')
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -187,6 +191,16 @@ if __name__ == '__main__':
                         scheduler.step(val_score)
 
                         logging.info('Validation Dice score: {}'.format(val_score))
+
+                        # Save the model if the validation score is the best we've seen so far.
+                        if epoch == 1 or val_score > best_val_score:
+                            best_val_score = val_score
+                            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+                            state_dict = model.state_dict()
+                            state_dict['mask_values'] = dataset.mask_tensor
+                            torch.save(state_dict, str(dir_checkpoint / 'best_checkpoint.pth'))
+                            logging.info(f'Best checkpoint saved with validation score: {val_score}')
+
                         try:
                             experiment.log({
                                 'learning rate': optimizer.param_groups[0]['lr'],
