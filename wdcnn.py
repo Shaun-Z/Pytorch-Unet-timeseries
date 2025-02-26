@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
 import numpy as np
+import argparse
 
 class Wide_CNN(nn.Module):
     def __init__(self, weeks, days, channel, wide_len):
@@ -120,27 +121,40 @@ def self_define_cnn_kernel_process(data):
     print(data_final.shape)
     return data_final
 
+def get_args():
+    parser = argparse.ArgumentParser(description='Prepare the data for the attack')
+    parser.add_argument('--attack_id', '-a', type=int, default=1, help='Attack ID')
+    parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
+    parser.add_argument('--weeks', type=int, default=43, help='Number of weeks in the dataset [43 | 29]')
+    parser.add_argument('--days', type=int, default=7, help='Number of days in the dataset [7 | 24]')
+    parser.add_argument('--train_percent', type=float, default=0.9, help='Validation split percentage') 
+    parser.add_argument('--epochs', type=int, default=150, help='Number of epochs to train the model')
+    return parser.parse_args()
+
 if __name__ == '__main__':
     from pathlib import Path
     import pandas as pd
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import roc_auc_score
     from sklearn.metrics import f1_score, recall_score
-    id = 'SGCC'
-    dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-    dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
-    dir_checkpoint = Path(f'./checkpoints_pseudo_{id}/')
+
+    args = get_args()
+    attack_id = args.attack_id
+    data_name = args.data_name
+    dir_data = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfx.csv')
+    dir_mask = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv')
+    dir_checkpoint = Path(f'./checkpoints_pseudo_{data_name}/')
 
     batch_size: int = 200
-    epochs: int = 120
+    epochs: int = args.epochs
     learning_rate: float = 1e-4 # 1e-5
     save_checkpoint: bool = True
     amp: bool = False
     weight_decay: float = 1e-8
     momentum: float = 0.999
     gradient_clipping: float = 1.0
-    weeks = 43  #43, 29
-    days = 7   #7, 24
+    weeks = args.weeks #43, 29
+    days = args.days #7, 24
 
     data = pd.read_csv(dir_data)
     label = pd.read_csv(dir_mask)
@@ -149,10 +163,10 @@ if __name__ == '__main__':
     label = (label.iloc[:,:-12].sum(axis=1) > 0).astype(int)
 
     # for valr in [0.7, 0.6, 0.5]:
-    valr = 0.9
-    print('Train split ratio:%.2f'%valr)
+    trainr = args.train_percent
+    print('Train split ratio:%.2f'%trainr)
 
-    X_train_wide, X_test_wide, Y_train, Y_test = train_test_split(data.values, label.values, test_size=1-valr, random_state = 2017)
+    X_train_wide, X_test_wide, Y_train, Y_test = train_test_split(data.values, label.values, test_size=1-trainr, random_state = 2017)
 
     # Y_train = Y_train[:Y_train.shape[0] - (Y_train.shape[0] % 7)]
     # Y_test = Y_test[:Y_test.shape[0] - (Y_test.shape[0] % 7)]
@@ -262,6 +276,6 @@ if __name__ == '__main__':
 
     # Save the model checkpoint
     if save_checkpoint:
-        checkpoint_path = Path(f'./checkpoints_pseudo_{id}/model_checkpoint.pth')
+        checkpoint_path = Path(f'./checkpoints_pseudo_{data_name}/model_checkpoint.pth')
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), checkpoint_path)
