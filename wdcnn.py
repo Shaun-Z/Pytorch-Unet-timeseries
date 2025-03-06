@@ -226,22 +226,25 @@ if __name__ == '__main__':
             optimizer.step()
 
             epoch_loss += loss.item()
-        
-        print(f'Epoch {epoch + 1}/{epochs}, Loss: {epoch_loss / len(train_loader)}')
 
-    # Evaluation loop
-    model.eval()
-    test_loss = 0
-    with torch.no_grad():
-        for batch in test_loader:
-            inputs_wide, inputs_deep, targets = batch
-            outputs = model(inputs_wide, inputs_deep)
-            loss = criterion(outputs.squeeze(), targets)
-            test_loss += loss.item()
+        # Evaluation loop
+        model.eval()
+        test_loss = 0
+        with torch.no_grad():
+            for batch in test_loader:
+                inputs_wide, inputs_deep, targets = batch
+                outputs = model(inputs_wide, inputs_deep)
+                loss = criterion(outputs.squeeze(), targets)
+                test_loss += loss.item()        
+        print(f'Epoch {epoch + 1}/{epochs}, Train Loss: {epoch_loss / len(train_loader)}, Test Loss: {test_loss / len(test_loader)}')
+        # Save the best model
+        if epoch == 0 or test_loss < best_test_loss:
+            best_test_loss = test_loss
+            best_model_state = model.state_dict()
+        model.train()
     
-    print(f'Test Loss: {test_loss / len(test_loader)}')
-
     # Calculate accuracy on test set
+    model.load_state_dict(best_model_state)
     correct = 0
     total = 0
     with torch.no_grad():
@@ -274,8 +277,8 @@ if __name__ == '__main__':
     print(f'Recall: {recall}')
     print(f'AUC: {auc}')
 
-    # Save the model checkpoint
-    if save_checkpoint:
-        checkpoint_path = Path(f'./checkpoints_pseudo_{data_name}/model_checkpoint.pth')
-        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save(model.state_dict(), checkpoint_path)
+    # # Save the model checkpoint
+    # if save_checkpoint:
+    #     checkpoint_path = Path(f'./checkpoints_pseudo_{data_name}/model_checkpoint.pth')
+    #     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    #     torch.save(model.state_dict(), checkpoint_path)
