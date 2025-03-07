@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from utils.data_loading import SGCCDataset
 import torch
-from unet import UNet_1D, UNet_1D_N, UNet_1D_L, UNet_1D_NN
+from unet import UNet_1D, UNet_1D_N, UNet_1D_L, UNet_1D_NN, UNet_1D_LL
 from torch.utils.data import random_split
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -35,8 +35,9 @@ def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
     parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
     parser.add_argument('--attack_id', type=int, default=1, help='Attack ID')
-    parser.add_argument('--val_percent', type=float, default=0.1, help='Validation percentage')
-    parser.add_argument('--model', '-m', default='best_checkpoint.pth', metavar='FILE', help="Specify the file in which the model is stored")
+    parser.add_argument('--val_percent', type=float, default=0.2, help='Validation percentage')
+    parser.add_argument('--model_name', '-m', type=str, default='UNet_1D', help='Model name')
+    parser.add_argument('--model', '-n', default='best_checkpoint.pth', metavar='FILE', help="Specify the file in which the model is stored")
     return parser.parse_known_args()
 
 # %%
@@ -44,6 +45,7 @@ args, _ = get_args()
 data_name = args.data_name
 attack_id = args.attack_id
 val_percent = args.val_percent
+model_name = args.model_name
 model = args.model
 dir_checkpoint = Path(f'./checkpoints_pseudo_{data_name}/')
 
@@ -94,8 +96,19 @@ mask_train = torch.tensor(np.array([train_set[i]['mask'] for i in range(len(trai
 data_val = torch.tensor(np.array([val_set[i]['data'] for i in range(len(val_set))]).squeeze())
 mask_val = torch.tensor(np.array([val_set[i]['mask'] for i in range(len(val_set))]).squeeze())
 
-net = UNet_1D(n_channels=1, n_classes=2, bilinear=False)
-
+if model_name == 'UNet_1D':
+    net = UNet_1D(n_channels=1, n_classes=2, bilinear=False)
+elif model_name == 'UNet_1D_N':
+    net = UNet_1D_N(n_channels=1, n_classes=2, bilinear=False)
+elif model_name == 'UNet_1D_L':
+    net = UNet_1D_L(n_channels=1, n_classes=2, bilinear=False)
+elif model_name == 'UNet_1D_NN':
+    net = UNet_1D_NN(n_channels=1, n_classes=2, bilinear=False)
+elif model_name == 'UNet_1D_LL':
+    net = UNet_1D_LL(n_channels=1, n_classes=2, bilinear=False)
+else:
+    print('Model name is not correct')
+    exit()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 net.to(device=device)

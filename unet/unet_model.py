@@ -116,6 +116,31 @@ class UNet_1D_L(nn.Module):
         self.up2 = torch.utils.checkpoint(self.up2)
         self.outc = torch.utils.checkpoint(self.outc)
 
+class UNet_1D_LL(nn.Module):
+    def __init__(self, n_channels, n_classes, bilinear=False):
+        super(UNet_1D_LL, self).__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = (DoubleConv_1D(n_channels, 32))
+        self.down1 = (Down_1D(32, 64))
+        self.up1 = (Up_1D(64, 32 // 1, bilinear))
+        self.outc = (OutConv_1D(32, n_classes))
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x = self.up1(x2, x1)
+        logits = self.outc(x)
+        return logits
+
+    def use_checkpointing(self):
+        self.inc = torch.utils.checkpoint(self.inc)
+        self.down1 = torch.utils.checkpoint(self.down1)
+        self.up1 = torch.utils.checkpoint(self.up1)
+        self.outc = torch.utils.checkpoint(self.outc)
+
 class UNet_1D_N(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear=False):
         super(UNet_1D_N, self).__init__()

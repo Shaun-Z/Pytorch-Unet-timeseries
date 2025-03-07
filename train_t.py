@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 import wandb
 from evaluate import evaluate_1D
-from unet import UNet_1D, UNet_1D_N, UNet_1D_L, UNet_1D_NN
+from unet import UNet_1D, UNet_1D_N, UNet_1D_L, UNet_1D_NN, UNet_1D_LL
 from utils.data_loading import SGCCDataset
 from utils.dice_score import dice_loss
 
@@ -48,9 +48,10 @@ def get_args():
     parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
     parser.add_argument('--bilinear', action='store_true', default=False, help='Use bilinear upsampling')
     parser.add_argument('--classes', '-c', type=int, default=2, help='Number of classes')
-    parser.add_argument('--val_percent', type=float, default=0.1, help='Validation percent')
+    parser.add_argument('--val_percent', type=float, default=0.2, help='Validation percent')
     parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
     parser.add_argument('--attack_id', '-a', type=int, default=1, help='Attack ID')
+    parser.add_argument('--model_name', '-n', type=str, default='UNet_1D', help='Model name')
 
     return parser.parse_args()
 
@@ -60,6 +61,7 @@ if __name__ == '__main__':
     data_name = args.data_name
     attack_id = args.attack_id
     val_percent = args.val_percent
+    model_name = args.model_name
     dir_data = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfx.csv')
     dir_mask = Path(f'./data/{data_name}_data/data_prepared_{attack_id}/combined_dfy_pseudo.csv')
     dir_checkpoint = Path(f'./checkpoints_pseudo_{data_name}/')
@@ -70,7 +72,19 @@ if __name__ == '__main__':
 
     # Change here to adapt to your data
     # n_classes is the number of probabilities you want to get per pixel
-    model = UNet_1D(n_channels=1, n_classes=args.classes, bilinear=False)
+    if model_name == 'UNet_1D':
+        model = UNet_1D(n_channels=1, n_classes=args.classes, bilinear=False)
+    elif model_name == 'UNet_1D_N':
+        model = UNet_1D_N(n_channels=1, n_classes=args.classes, bilinear=False)
+    elif model_name == 'UNet_1D_L':
+        model = UNet_1D_L(n_channels=1, n_classes=args.classes, bilinear=False)
+    elif model_name == 'UNet_1D_NN':
+        model = UNet_1D_NN(n_channels=1, n_classes=args.classes, bilinear=False)
+    elif model_name == 'UNet_1D_LL':
+        model = UNet_1D_LL(n_channels=1, n_classes=args.classes, bilinear=False)
+    else:
+        print('Model name is not correct')
+        sys.exit(1)
     model = model.to(memory_format=torch.channels_last)
 
     logging.info(f'Network:\n'
