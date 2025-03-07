@@ -54,12 +54,19 @@ python predict_t.py --data_name DLC --attack_id 1 --val_percent 0.1
 
 ---
 
-# Expand tests
+---
+
+# More tests
 
 ## `attack_id` & `model_name`
 
-```shell
-python train_t.py --data_name DLC --attack_id 1 -n UNet_1D
-python predict_t.py --data_name DLC --attack_id 1 -n UNet_1D
+```bash
+python train_t.py --data_name DLC --attack_id 1 --data_name UNet_1D_LL
+python predict_t.py --data_name DLC --attack_id 1 --data_name UNet_1D_LL
 ```
 
+| `--attack_id` | 1   | 2   | 3   | 4   | 5   | 6   |
+| ----------- | --- | --- | --- | --- | --- | --- |
+
+| `--data_name` | UNet_1D_LL | UNet_1D_L | UNet_1D | UNet_1D_N | UNet_1D_NN |
+| ----------- | ---------- | --------- | ------- | --------- | ---------- |
