@@ -51,3 +51,15 @@ python train_t.py --data_name DLC --attack_id 1 --val_percent 0.1
 ```shell
 python predict_t.py --data_name DLC --attack_id 1 --val_percent 0.1
 ```
+
+---
+
+# Expand tests
+
+## `attack_id` & `model_name`
+
+```shell
+python train_t.py --data_name DLC --attack_id 1 -n UNet_1D
+python predict_t.py --data_name DLC --attack_id 1 -n UNet_1D
+```
+

@@ -36,8 +36,8 @@ def get_args():
     parser.add_argument('--data_name', type=str, default='SGCC', help='Name of the dataset')
     parser.add_argument('--attack_id', type=int, default=1, help='Attack ID')
     parser.add_argument('--val_percent', type=float, default=0.2, help='Validation percentage')
-    parser.add_argument('--model_name', '-m', type=str, default='UNet_1D', help='Model name')
-    parser.add_argument('--model', '-n', default='best_checkpoint.pth', metavar='FILE', help="Specify the file in which the model is stored")
+    parser.add_argument('--model_name', '-n', type=str, default='UNet_1D', help='Model name')
+    parser.add_argument('--model', '-m', default='best_checkpoint.pth', metavar='FILE', help="Specify the file in which the model is stored")
     return parser.parse_known_args()
 
 # %%
