@@ -14,14 +14,14 @@ import numpy as np
 # iris = datasets.load_iris()
 # X = iris.data
 # y = iris.target
-id = 'DLC'
-dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
+id = 'SGCC'
+dir_data = Path(f'./data/{id}_data/data_prepared_6/combined_dfx.csv')
+dir_mask = Path(f'./data/{id}_data/data_prepared_6/combined_dfy_pseudo.csv')
 dataset = SGCCDataset(dir_data, dir_mask, normalize=True)
 
 # Split dataset into training and testing sets
 # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-val_percent: float = 0.1
+val_percent: float = 0.3
 n_val = int(len(dataset) * val_percent)
 n_train = len(dataset) - n_val
 train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))

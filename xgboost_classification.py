@@ -12,15 +12,13 @@ import numpy as np
 from sklearn.metrics import log_loss
 
 # Load dataset
-id = 'DLC'
-# dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-# dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
-dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy.csv')
+id = 'SGCC'
+dir_data = Path(f'./data/{id}_data/data_prepared_6/combined_dfx.csv')
+dir_mask = Path(f'./data/{id}_data/data_prepared_6/combined_dfy.csv')
 dataset = SGCCDataset(dir_data, dir_mask, normalize=True)
 
 # Split dataset into training and testing sets
-val_percent: float = 0.1
+val_percent: float = 0.3
 n_val = int(len(dataset) * val_percent)
 n_train = len(dataset) - n_val
 train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))

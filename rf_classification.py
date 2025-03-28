@@ -11,11 +11,11 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 # Load dataset
-id = 'DLC'
+id = 'SGCC'
 # dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
 # dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy_pseudo.csv')
-dir_data = Path(f'./data/{id}_data/data_prepared/combined_dfx.csv')
-dir_mask = Path(f'./data/{id}_data/data_prepared/combined_dfy.csv')
+dir_data = Path(f'./data/{id}_data/data_prepared_3/combined_dfx.csv')
+dir_mask = Path(f'./data/{id}_data/data_prepared_3/combined_dfy.csv')
 dataset = SGCCDataset(dir_data, dir_mask, normalize=True)
 
 # Split dataset into training and testing sets
