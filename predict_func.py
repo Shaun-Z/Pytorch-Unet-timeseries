@@ -37,3 +37,4 @@ def predict_mask(data_val):
         else:
             mask_pred = torch.sigmoid(output) > 0.5
     return mask_pred.cpu().numpy()
+
