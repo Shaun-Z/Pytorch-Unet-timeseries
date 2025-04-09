@@ -1,48 +1,72 @@
-# Data Preparation
+# SGCC
 
-The original raw data is stored in `./data/SGCC_data/data.csv`
+## Prepare data
 
-## Manually attacked data generation
-
-Run the script `./data_add_noise/attack_data_generate.py`, in which
-
-```python
-datapath = Path('data/SGCC_data')
-df = pd.read_csv(datapath/"data.csv")
+Run the folowing 6 commands to generate data. (Under 6 different folders)
+```shell
+python prepare_data.py --data_name SGCC --attack_id 1
+python prepare_data.py --data_name SGCC --attack_id 2
+python prepare_data.py --data_name SGCC --attack_id 3
+python prepare_data.py --data_name SGCC --attack_id 4
+python prepare_data.py --data_name SGCC --attack_id 5
+python prepare_data.py --data_name SGCC --attack_id 6
 ```
 
-specifies the path to the raw data file, and
+## Train
 
-```python
-group_normal_2016 = group_normal.loc[:, (group_normal.columns.year == 2016)].reset_index(drop=True).fillna(0)
+```shell
+python train_t.py --data_name SGCC --attack_id 1 --val_percent 0.1
 ```
 
-selects the data in `2016`.
+## Predict
 
-To generate attacked data and split data and labels, run the following command:
-
-```cmd
-python ./data_add_noise/attack_data_generate.py
+```shell
+python predict_t.py --data_name SGCC --attack_id 1 --val_percent 0.1
 ```
 
-then you will get the following two files to train the model.
+---
 
-- data: `./data/attack.csv`
+# DLC
 
-- label: `./data/label.csv`
+## Prepare data
 
-# Training
-
-Run 
-
-```cmd
-python train_t.py
+Run the folowing 6 commands to generate data. (Under 6 different folders)
+```shell
+python prepare_data_dlc.py --data_name DLC --attack_id 1
+python prepare_data_dlc.py --data_name DLC --attack_id 2
+python prepare_data_dlc.py --data_name DLC --attack_id 3
+python prepare_data_dlc.py --data_name DLC --attack_id 4
+python prepare_data_dlc.py --data_name DLC --attack_id 5
+python prepare_data_dlc.py --data_name DLC --attack_id 6
 ```
 
-The model state dict will be stored in `./checkpoints`.
+## Train
 
-# Testing
+```shell
+python train_t.py --data_name DLC --attack_id 1 --val_percent 0.1
+```
 
-The options and workflow are store in a notebook file `predict_t.ipynb`
+## Predict
 
-Please check this file to generate the `result.csv` file.
+```shell
+python predict_t.py --data_name DLC --attack_id 1 --val_percent 0.1
+```
+
+---
+
+---
+
+# More tests
+
+## `attack_id` & `model_name`
+
+```bash
+python train_t.py --data_name DLC --attack_id 1 --model_name UNet_1D_LL
+python predict_t.py --data_name DLC --attack_id 1 --model_name UNet_1D_LL
+```
+
+| `--attack_id` | 1   | 2   | 3   | 4   | 5   | 6   |
+| ----------- | --- | --- | --- | --- | --- | --- |
+
+| `--model_name` | UNet_1D_LL | UNet_1D_L | UNet_1D | UNet_1D_N | UNet_1D_NN |
+| ----------- | ---------- | --------- | ------- | --------- | ---------- |
